@@ -1,11 +1,8 @@
 package com.example.fstr.model;
 
-import com.google.gson.Gson;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;

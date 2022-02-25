@@ -1,5 +1,7 @@
 package com.example.fstr.controller;
 
+import com.example.fstr.exceptions.BadRequestException;
+import com.example.fstr.exceptions.OperationExecutionException;
 import com.example.fstr.model.Pass;
 import com.example.fstr.repository.PassRepository;
 import org.json.JSONObject;
@@ -18,7 +20,7 @@ public class PassController {
     PassRepository passRepository;
 
     @PostMapping("/pereval_added")
-    public Pass submitData(@RequestBody String pass) {
+    public Pass submitData(@RequestBody String pass) throws BadRequestException, OperationExecutionException {
         int indexOfImagesData = pass.indexOf("\"images\":");
         StringBuilder builder = new StringBuilder(pass.substring(0, indexOfImagesData - 1).trim());
         String passData = builder.replace(builder.length() - 1, builder.length() - 1, "}").toString();
