@@ -25,9 +25,8 @@ public class PassController {
         StringBuilder builder = new StringBuilder(pass.substring(0, indexOfImagesData - 1).trim());
         String passData = builder.replace(builder.length() - 1, builder.length() - 1, "}").toString();
         String imagesData = "{" + pass.substring(indexOfImagesData);
-        if (passContainsCoords(passData))
-            return passRepository.save(new Pass(LocalDateTime.now(), passData, imagesData, "new"));
-        return null;
+        if (!passContainsCoords(passData)) throw new BadRequestException("Pass coordinates are mandatory");
+        return passRepository.save(new Pass(LocalDateTime.now(), passData, imagesData, "new"));
     }
 
     private boolean passContainsCoords(String passJsonString) {
