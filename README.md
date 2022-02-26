@@ -8,11 +8,16 @@ The API receives the new montain pass data submitted buy a user via mobile appli
 
 **USED TOOLS AND TECHNOLOGIES**
 
-Spring Boot version 2.6.3
-JDK version 1.8 or later
-Spring Framework
-Hibernate
-Maven
+Spring Boot version 2.6.3,
+
+JDK version 1.8 or later,
+
+Spring Framework,
+
+Hibernate,
+
+Maven,
+
 PostgreSQL
 
 **PROJECT STRUCTURE AND FUNCTIONALITY DESCRIPTION**
