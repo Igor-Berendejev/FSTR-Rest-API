@@ -1,12 +1,12 @@
 # FSTR-Rest-API
 REST API for FSTR mobile application
 
-DESCRIPTION
+**DESCRIPTION**
 
 The REST API for a mobile application of Federation of Sports Tourism of Russia (FSTR).
 The API receives the new montain pass data submitted buy a user via mobile application and posts it to the database of FSTR.
 
-USED TOOLS AND TECHNOLOGIES
+**USED TOOLS AND TECHNOLOGIES**
 
 Spring Boot version 2.6.3
 JDK version 1.8 or later
@@ -15,7 +15,7 @@ Hibernate
 Maven
 PostgreSQL
 
-PROJECT STRUCTURE AND FUNCTIONALITY DESCRIPTION
+**PROJECT STRUCTURE AND FUNCTIONALITY DESCRIPTION**
 
 ![image](https://user-images.githubusercontent.com/90723839/155845799-292701b8-72f0-472d-a4a6-a99b6c3f7d4e.png)
 
