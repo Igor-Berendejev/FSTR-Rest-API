@@ -1,7 +1,5 @@
 package com.example.fstr.model;
-
 import org.hibernate.annotations.Type;
-
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
