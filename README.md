@@ -47,8 +47,10 @@ You can download an executable jar file here: https://1drv.ms/u/s!Au5Mbiai9-SxhH
 
 Before running the API you have to define Environment variables FSTR_DB_HOST - for database server host (jdbc:postgresql://"your host"), FSTR_DB_PORT - for database server port, FSTR_LOGIN - for database username, FSTR_PASS - for database password. Please note API will be able to connect only database named "pereval"
 
-Once API is running it will connect to http://localhost:8080/api/ where you can where you can send your queries to the API in JSON format. 
-To test the PostMapping (add new entry to "peraval_added" and images to "peraval_images" table) please connect to http://localhost:8080/api/pereval_added
+Once API is running it will connect to http://localhost:8080/api/ where you can send your queries to the API in JSON format.
+
+To test the PostMapping (add new entry to "peraval_added" and images to "peraval_images" table) please connect to http://localhost:8080/api/pereval_added.
+
 JSON format example:
 
 {
