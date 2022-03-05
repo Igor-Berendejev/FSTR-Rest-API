@@ -44,10 +44,10 @@ Interface ImageRepository extending JpaRepository <Image, Integer> is a DAO inte
 
 Class PassController is a controller class processing requests from the mobile application and sending them to the database with PassRepository methods.
 
-@PostMapping("/pereval_added") throw BadRequestException in case the data received from mobile application is not full and therefor is not sufficient to be added
+@PostMapping("/pereval_added") throws BadRequestException in case the data received from mobile application is not full and therefor is not sufficient to be added
 to the database (corresponds to HTTP responce 400 BAD REQUEST) and IOException in case images URL is invalid or cannot be connected.
 
-@PutMapping("/pereval_added/{id}") throw BadRequestException in case
+@PutMapping("/pereval_added/{id}") throws BadRequestException in case user details were changed or record status in the database is not "new" and IOException in case images URL is invalid or cannot be connected.
 
 OperationExecutionexception is thrown in case of fail to connect server and corresponds to HTTP status 503 SERVICE UNAVAILABLE.
 
