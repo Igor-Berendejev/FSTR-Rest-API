@@ -1,18 +1,21 @@
 package com.example.fstr.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "pereval_added")
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
-public class Pass {
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+public class Pass implements Serializable {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private int id;
     @Column(name = "date_added")
     private LocalDateTime date_added;

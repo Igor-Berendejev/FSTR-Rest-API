@@ -9,10 +9,7 @@ import com.example.fstr.repository.PassRepository;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,7 +19,7 @@ import java.net.URL;
 import java.time.LocalDateTime;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/submitData")
 public class PassController {
     @Autowired
     PassRepository passRepository;
@@ -43,6 +40,12 @@ public class PassController {
     public Image addImage(byte[] imageBytes) {
         return imageRepository.save(new Image(LocalDateTime.now(), imageBytes));
     }
+
+    @GetMapping("/pereval_added/{id}")
+    public Pass getPassById(@PathVariable(value = "id") Integer passId){
+        return passRepository.getById(passId);
+    }
+
 
     private boolean passContainsCoords(String passJsonString) {
         JSONObject passJson = new JSONObject(passJsonString);
