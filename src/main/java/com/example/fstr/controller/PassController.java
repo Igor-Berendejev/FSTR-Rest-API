@@ -41,15 +41,17 @@ public class PassController {
     }
 
     @GetMapping("/pereval_added/{id}")
-    public Pass getPassById(@PathVariable(value = "id") Integer passId){
+    public Pass getPassById(@PathVariable(value = "id") Integer passId) {
         return passRepository.getById(passId);
     }
 
     @PutMapping("/pereval_added/{id}")
     public Pass updatePass(@PathVariable("id") int id, @RequestBody String updatedPass) throws BadRequestException, IOException {
         Pass databasePass = passRepository.getById(id);
-        if (!userDetailsMatch(databasePass.getRaw_data(), updatedPass)) throw new BadRequestException("Cannot change user details");
-        if (!databasePass.getStatus().equals("new")) throw new BadRequestException("Cannot update, record has been processed already");
+        if (!userDetailsMatch(databasePass.getRaw_data(), updatedPass))
+            throw new BadRequestException("Cannot change user details");
+        if (!databasePass.getStatus().equals("new"))
+            throw new BadRequestException("Cannot update, record has been processed already");
         if (!passContainsCoords(updatedPass)) throw new BadRequestException("Pass coordinates are mandatory");
         databasePass.setRaw_data(getRawDataFromJSON(updatedPass));
         deletePassImages(databasePass.getImages());
@@ -59,7 +61,7 @@ public class PassController {
     }
 
     @DeleteMapping("/pereval_images/{id}")
-    public void deleteImage(@PathVariable("id") int id){
+    public void deleteImage(@PathVariable("id") int id) {
         imageRepository.deleteById(id);
     }
 
@@ -96,7 +98,7 @@ public class PassController {
         String imagesJson = "";
         for (int i = 0; i < imagesJsonArray.toList().size(); i++) {
             JSONObject jsonObject = imagesJsonArray.getJSONObject(i);
-            if (!jsonObject.getString("url").equals("")){
+            if (!jsonObject.getString("url").equals("")) {
                 Image image = addImage(getImageBytes(new URL(jsonObject.getString("url"))));
                 imagesJson = imagesJson + "\"" + jsonObject.getString("title") + "\"" + ":" + image.getId();
                 if (i < imagesJsonArray.toList().size() - 1) imagesJson = imagesJson + ",";
@@ -105,26 +107,26 @@ public class PassController {
         return "{" + imagesJson + "}";
     }
 
-    private boolean userDetailsMatch(String passJsonString, String updatedPassJsonString){
+    private boolean userDetailsMatch(String passJsonString, String updatedPassJsonString) {
         JSONObject passJson = new JSONObject(passJsonString);
         JSONObject updatedPassJson = new JSONObject(updatedPassJsonString);
         return (passJson.getJSONObject("user").get("name").equals(updatedPassJson.getJSONObject("user").get("name")) &&
                 passJson.getJSONObject("user").get("surname").equals(updatedPassJson.getJSONObject("user").get("surname")) &&
-                passJson.getJSONObject("user").get("otc").equals(updatedPassJson.getJSONObject("user").get("otc"))&&
-                passJson.getJSONObject("user").get("email").equals(updatedPassJson.getJSONObject("user").get("email"))&&
+                passJson.getJSONObject("user").get("otc").equals(updatedPassJson.getJSONObject("user").get("otc")) &&
+                passJson.getJSONObject("user").get("email").equals(updatedPassJson.getJSONObject("user").get("email")) &&
                 passJson.getJSONObject("user").get("phone").equals(updatedPassJson.getJSONObject("user").get("phone")));
     }
 
-    private String getRawDataFromJSON(String passJsonString){
+    private String getRawDataFromJSON(String passJsonString) {
         int indexOfImagesData = passJsonString.indexOf("\"images\":");
         StringBuilder builder = new StringBuilder(passJsonString.substring(0, indexOfImagesData - 1).trim());
         return builder.replace(builder.length() - 1, builder.length() - 1, "}").toString();
     }
 
-    private void deletePassImages(String passImagesJsonString){
+    private void deletePassImages(String passImagesJsonString) {
         JSONObject imagesJson = new JSONObject(passImagesJsonString);
         Iterator<String> keys = imagesJson.keys();
-        while(keys.hasNext()){
+        while (keys.hasNext()) {
             int imageID = imagesJson.getInt(keys.next());
             deleteImage(imageID);
         }
