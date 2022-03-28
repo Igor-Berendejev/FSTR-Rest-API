@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Iterator;
+import java.util.regex.Pattern;
 
 @RestController
 @RequestMapping("/submitData")
@@ -28,9 +29,10 @@ public class PassController {
     ImageRepository imageRepository;
 
     @PostMapping("/pereval_added")
-    public Pass submitData(@RequestBody String pass) throws BadRequestException, OperationExecutionException, IOException {
+    public Pass submitData(@RequestBody String pass) throws BadRequestException, IOException {
         String passData = getRawDataFromJSON(pass);
         if (!passContainsCoords(passData)) throw new BadRequestException("Pass coordinates are mandatory");
+        if (!passContainsUserDetails(passData)) throw new BadRequestException("User details are mandatory. Check name, surname, email");
         String imagesData = saveImages(new JSONObject(pass).getJSONArray("images"));
         return passRepository.save(new Pass(LocalDateTime.now(), passData, imagesData, "new"));
     }
@@ -71,6 +73,14 @@ public class PassController {
         return (!passJson.getJSONObject("coords").get("latitude").equals("") &&
                 !passJson.getJSONObject("coords").get("longitude").equals("") &&
                 !passJson.getJSONObject("coords").get("height").equals(""));
+    }
+
+    private boolean passContainsUserDetails(String passJsonString){
+        Pattern emailPattern = Pattern.compile("\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*\\.\\w{2,4}");
+        JSONObject passJson = new JSONObject(passJsonString);
+        return (!passJson.getJSONObject("user").getString("name").equals("") &&
+                !passJson.getJSONObject("user").getString("surname").equals("") &&
+                emailPattern.matcher(passJson.getJSONObject("user").getString("email")).matches());
     }
 
     private byte[] getImageBytes(URL url) throws IOException {
