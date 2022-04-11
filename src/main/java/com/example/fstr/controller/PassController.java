@@ -1,7 +1,6 @@
 package com.example.fstr.controller;
 
 import com.example.fstr.exceptions.BadRequestException;
-import com.example.fstr.exceptions.OperationExecutionException;
 import com.example.fstr.model.Image;
 import com.example.fstr.model.Pass;
 import com.example.fstr.repository.ImageRepository;
@@ -18,6 +17,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Pattern;
 
 @RestController
@@ -45,6 +45,16 @@ public class PassController {
     @GetMapping("/pereval_added/{id}")
     public Pass getPassById(@PathVariable(value = "id") Integer passId) {
         return passRepository.getById(passId);
+    }
+
+    @GetMapping("/pereval_added/{id}/status")
+    public String getStatus(@PathVariable(value = "id") Integer passId) {
+        return passRepository.getStatusById(passId);
+    }
+
+    @GetMapping("/pereval_added")
+    public List<Pass> getAll(){
+        return passRepository.findAll();
     }
 
     @PutMapping("/pereval_added/{id}")
