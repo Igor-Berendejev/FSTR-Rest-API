@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "pereval_added")
+@Table(name = "mount_pass_added")
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Pass implements Serializable {

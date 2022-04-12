@@ -28,36 +28,76 @@ public class PassController {
     @Autowired
     ImageRepository imageRepository;
 
-    @PostMapping("/pereval_added")
+    /**
+     * Checks if data received from the client contains all mandatory details,
+     * parses data, saves a pass data to the database table mount_pass_added
+     *
+     * @param pass - a String representation of json received from the client
+     * @return Pass - a record in database table mount_pass_added
+     * @throws BadRequestException
+     * @throws IOException
+     */
+    @PostMapping("/mount_pass_added")
     public Pass submitData(@RequestBody String pass) throws BadRequestException, IOException {
         String passData = getRawDataFromJSON(pass);
         if (!passContainsCoords(passData)) throw new BadRequestException("Pass coordinates are mandatory");
-        if (!passContainsUserDetails(passData)) throw new BadRequestException("User details are mandatory. Check name, surname, email");
-        String imagesData = saveImages(new JSONObject(pass).getJSONArray("images"));
+        if (!passContainsUserDetails(passData))
+            throw new BadRequestException("User details are mandatory. Check name, surname, email");
+
+        String imagesData = getPassImages(new JSONObject(pass).getJSONArray("images"));
         return passRepository.save(new Pass(LocalDateTime.now(), passData, imagesData, "new"));
     }
 
-    @PostMapping("/pereval_images")
+    /**
+     * Saves an image to the database table mount_pass_images
+     *
+     * @param imageBytes - represents a byte array of the image
+     * @return Image - a record in database table mount_pass_images
+     */
+    @PostMapping("/mount_pass_images")
     public Image addImage(byte[] imageBytes) {
         return imageRepository.save(new Image(LocalDateTime.now(), imageBytes));
     }
 
-    @GetMapping("/pereval_added/{id}")
+    /**
+     * @param passId - an id of the record in the database table mount_pass_added
+     * @return - Pass a record in database table mount_pass_added
+     */
+    @GetMapping("/mount_pass_added/{id}")
     public Pass getPassById(@PathVariable(value = "id") Integer passId) {
         return passRepository.getById(passId);
     }
 
-    @GetMapping("/pereval_added/{id}/status")
+    /**
+     * @param passId - an id of the record in the database table mount_pass_added
+     * @return status of the record in the database
+     */
+    @GetMapping("/mount_pass_added/{id}/status")
     public String getStatus(@PathVariable(value = "id") Integer passId) {
         return passRepository.getStatusById(passId);
     }
 
-    @GetMapping("/pereval_added")
-    public List<Pass> getAll(){
+    /**
+     * @return all records in the database table mount_pass_added
+     */
+    @GetMapping("/mount_pass_added")
+    public List<Pass> getAll() {
         return passRepository.findAll();
     }
 
-    @PutMapping("/pereval_added/{id}")
+    /**
+     * Checks if data received from the client contains all mandatory details,
+     * checks if the record client wants to update is in status "new",
+     * parses data received from the client and updates record in the database
+     *
+     * @param id          - an id of a record to be updated in database table mount_pass_added
+     * @param updatedPass - updated data of the record
+     * @return Pass - an updated record in database table mount_pass_added
+     * @throws BadRequestException in case user details in the updated record do not match user details in the database,
+     *                             in case database record status is not "new", in case pass coordinates are missing int the updated record
+     * @throws IOException
+     */
+    @PutMapping("/mount_pass_added/{id}")
     public Pass updatePass(@PathVariable("id") int id, @RequestBody String updatedPass) throws BadRequestException, IOException {
         Pass databasePass = passRepository.getById(id);
         if (!userDetailsMatch(databasePass.getRaw_data(), updatedPass))
@@ -65,19 +105,31 @@ public class PassController {
         if (!databasePass.getStatus().equals("new"))
             throw new BadRequestException("Cannot update, record has been processed already");
         if (!passContainsCoords(updatedPass)) throw new BadRequestException("Pass coordinates are mandatory");
+
         databasePass.setRaw_data(getRawDataFromJSON(updatedPass));
         deletePassImages(databasePass.getImages());
-        String imagesData = saveImages(new JSONObject(updatedPass).getJSONArray("images"));
+        String imagesData = getPassImages(new JSONObject(updatedPass).getJSONArray("images"));
         databasePass.setImages(imagesData);
+
         return passRepository.save(databasePass);
     }
 
-    @DeleteMapping("/pereval_images/{id}")
+    /**
+     * deletes an image from the database table mount_pass_images
+     *
+     * @param id an id of the record in database table mount_pass_images
+     */
+    @DeleteMapping("/mount_pass_images/{id}")
     public void deleteImage(@PathVariable("id") int id) {
         imageRepository.deleteById(id);
     }
 
-
+    /**
+     * checks if pass data received from the client contains pass coordinates
+     *
+     * @param passJsonString a String representation of json received from the client
+     * @return true is coordinates are available, otherwise false
+     */
     private boolean passContainsCoords(String passJsonString) {
         JSONObject passJson = new JSONObject(passJsonString);
         return (!passJson.getJSONObject("coords").get("latitude").equals("") &&
@@ -85,7 +137,13 @@ public class PassController {
                 !passJson.getJSONObject("coords").get("height").equals(""));
     }
 
-    private boolean passContainsUserDetails(String passJsonString){
+    /**
+     * checks if pass data received from the client contains application user details
+     *
+     * @param passJsonString a String representation of json received from the client
+     * @return
+     */
+    private boolean passContainsUserDetails(String passJsonString) {
         Pattern emailPattern = Pattern.compile("\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*\\.\\w{2,4}");
         JSONObject passJson = new JSONObject(passJsonString);
         return (!passJson.getJSONObject("user").getString("name").equals("") &&
@@ -93,6 +151,13 @@ public class PassController {
                 emailPattern.matcher(passJson.getJSONObject("user").getString("email")).matches());
     }
 
+    /**
+     * gets an image as byte array from the URL
+     *
+     * @param url a URL of the image
+     * @return image as byte array
+     * @throws IOException in case URL could not be opened
+     */
     private byte[] getImageBytes(URL url) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         InputStream is = null;
@@ -114,7 +179,12 @@ public class PassController {
         return null;
     }
 
-    private String saveImages(JSONArray imagesJsonArray) throws IOException {
+    /**
+     * @param imagesJsonArray a JsonArray representing images URLs received from the client
+     * @return a json for submitting to images column of mount_pass_added table
+     * @throws IOException in case image URL could not be opened
+     */
+    private String getPassImages(JSONArray imagesJsonArray) throws IOException {
         String imagesJson = "";
         for (int i = 0; i < imagesJsonArray.toList().size(); i++) {
             JSONObject jsonObject = imagesJsonArray.getJSONObject(i);
@@ -127,6 +197,13 @@ public class PassController {
         return "{" + imagesJson + "}";
     }
 
+    /**
+     * checks if user details match in two strings representing pass data received from client
+     *
+     * @param passJsonString        a string representation of json saved in the raw_data column of mount_pass_added table
+     * @param updatedPassJsonString a String representation of json received from the client
+     * @return true if user details match, otherwise false
+     */
     private boolean userDetailsMatch(String passJsonString, String updatedPassJsonString) {
         JSONObject passJson = new JSONObject(passJsonString);
         JSONObject updatedPassJson = new JSONObject(updatedPassJsonString);
@@ -137,12 +214,20 @@ public class PassController {
                 passJson.getJSONObject("user").get("phone").equals(updatedPassJson.getJSONObject("user").get("phone")));
     }
 
+    /**
+     * @param passJsonString a String representation of json received from the client
+     * @return a json for submitting to raw_data column of mount_pass_added table
+     */
     private String getRawDataFromJSON(String passJsonString) {
         int indexOfImagesData = passJsonString.indexOf("\"images\":");
         StringBuilder builder = new StringBuilder(passJsonString.substring(0, indexOfImagesData - 1).trim());
         return builder.replace(builder.length() - 1, builder.length() - 1, "}").toString();
     }
 
+    /**
+     * deletes all images associated with a pass record in mount_pass_added table
+     * @param passImagesJsonString
+     */
     private void deletePassImages(String passImagesJsonString) {
         JSONObject imagesJson = new JSONObject(passImagesJsonString);
         Iterator<String> keys = imagesJson.keys();

@@ -1,10 +1,12 @@
 package com.example.fstr.model;
+
 import org.hibernate.annotations.Type;
+
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "pereval_images")
+@Table(name = "mount_pass_images")
 public class Image {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
