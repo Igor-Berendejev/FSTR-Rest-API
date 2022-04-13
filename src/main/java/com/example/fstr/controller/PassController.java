@@ -100,10 +100,10 @@ public class PassController {
     @PutMapping("/mount_pass_added/{id}")
     public Pass updatePass(@PathVariable("id") int id, @RequestBody String updatedPass) throws BadRequestException, IOException {
         Pass databasePass = passRepository.getById(id);
-        if (!userDetailsMatch(databasePass.getRaw_data(), updatedPass))
-            throw new BadRequestException("Cannot change user details");
         if (!databasePass.getStatus().equals("new"))
             throw new BadRequestException("Cannot update, record has been processed already");
+        if (!userDetailsMatch(databasePass.getRaw_data(), updatedPass))
+            throw new BadRequestException("Cannot change user details");
         if (!passContainsCoords(updatedPass)) throw new BadRequestException("Pass coordinates are mandatory");
 
         databasePass.setRaw_data(getRawDataFromJSON(updatedPass));
@@ -209,7 +209,6 @@ public class PassController {
         JSONObject updatedPassJson = new JSONObject(updatedPassJsonString);
         return (passJson.getJSONObject("user").get("name").equals(updatedPassJson.getJSONObject("user").get("name")) &&
                 passJson.getJSONObject("user").get("surname").equals(updatedPassJson.getJSONObject("user").get("surname")) &&
-                passJson.getJSONObject("user").get("otc").equals(updatedPassJson.getJSONObject("user").get("otc")) &&
                 passJson.getJSONObject("user").get("email").equals(updatedPassJson.getJSONObject("user").get("email")) &&
                 passJson.getJSONObject("user").get("phone").equals(updatedPassJson.getJSONObject("user").get("phone")));
     }
