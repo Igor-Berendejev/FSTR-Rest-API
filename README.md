@@ -1,12 +1,17 @@
-# FSTR-Rest-API
-REST API for FSTR mobile application
+**1.	APPLICATION DESCRIPTION**
 
-**1. DESCRIPTION**
+This is the REST API that receives a data from the client and saves it to the database of Federation of Sports Tourism (FSTR).
 
-The REST API for a mobile application of Federation of Sports Tourism of Russia (FSTR).
-The API receives the new montain pass data submitted buy a user via mobile application and posts it to the database of FSTR.
+FSTR database name is “pereval” and it has four tables. ER Diagram:
 
-**2. USED TOOLS AND TECHNOLOGIES**
+![image](https://user-images.githubusercontent.com/90723839/163256971-fe32928b-29bf-46ec-8ff7-12341dd10b44.png)
+
+ 
+Client is a FSTR mobile application where users can submit information about a new mountain pass (e.g. mountain pass name, coordinates, difficulty level, also application user details and attach pictures of the mountain pass) by filling in fields in the application.
+
+Data arrives to the API in json format (pls check json example in the APPENDIX below) and gets submitted to database tables mount_pass_added and mount_pass_images.
+
+**2.	USED TOOLS AND TECHNOLOGIES**
 
 Spring Boot version 2.6.3,
 
@@ -20,99 +25,130 @@ Maven,
 
 PostgreSQL
 
-**3. PROJECT STRUCTURE AND FUNCTIONALITY DESCRIPTION**
-
-![image](https://user-images.githubusercontent.com/90723839/156062002-411a0cc1-0eb8-4c6c-a734-b8e0edfe6c1f.png)
-
-The current version of the API allows:
-
- a) to add new mountain pass data to the database table "peraval_added" and images to to the database table "peraval_images" -  @PostMapping("/pereval_added").
+**3.	FUNCTIONALITY EXPLANATION**
  
- b) to get Pass data from the database by pass ID - @GetMapping("/pereval_added/{id}")
+  **3.1	Connection to the database**
+  
+In order every API user could connect database with own host/ username/ password, API establishes connection using environment variables FSTR_DB_HOST, FSTR_DB_PORT, FSTR_DB_LOGIN, FSTR_DB_PASS:
+
+![image](https://user-images.githubusercontent.com/90723839/163257384-7c4b07ba-4d76-4fc9-bdfe-a814e4c92a90.png)
+
+For example:
  
- c) update Pass data in the database in case the record in in status "new" - @PutMapping("/pereval_added/{id}") (application allows to update all fields except user details)
+ ![image](https://user-images.githubusercontent.com/90723839/163257428-15daa67f-559a-4c6c-bc0d-9e353e5ae4a8.png)
+
+**3.2	Main functions**
+
+**@PostMapping("/mount_pass_added")** Parses json received from the client:
+
+•	Checks if mandatory data (user details and mountain pass coordinates) are available
+
+•	Saves images to the mount_pass_images table (using @PostMapping("/mount_pass_images"))
+
+•	Saves time of submitting the data (current time), information about mountain pass (in json format), saved images titles and IDs from mount_pass_images table (in json format), status of the added record (always added as “new”)
+
+**@GetMapping("/mount_pass_added/{id}")** Returns a record from mount_pass_added table by its ID
+
+**@GetMapping("/mount_pass_added/{id}/status")** Returns status of the record from mount_pass_added table by its ID
+
+**@PutMapping("/mount_pass_added/{id}")** Receives an updated record from the client. If a record in mount_pass_added table is in status “new”:
+
+•	Checks if updated record user data matches the database record 
+
+•	Checks if mountain pass coordinates are available in the updated record
+
+If above criterias are satisfied deletes all images of the mountain pass from mount_pass_images table (using **@DeleteMapping("/mount_pass_images/{id}")**) and updates records with new data.
+
+**4.	TESTING**
+
+By default the API makes connection to http://localhost:8080/submitData/ where you can send your queries to the API in JSON format.
+
+**@PostMapping("/mount_pass_added")** test
+
+![image](https://user-images.githubusercontent.com/90723839/163257773-844f9b3e-27d3-4e2b-b2b9-b0bfe7fce9c2.png)
+
+Testing **@PutMapping("/mount_pass_added/{id}")** (trying to update record with changed user details to check error handling)
  
- d) delete images from "peraval_images" table - @DeleteMapping("/pereval_images/{id}"). This method is used in @PutMapping("/pereval_added/{id}") to remove old images from the table and link new images to the Pass record
+ ![image](https://user-images.githubusercontent.com/90723839/163257870-e8197b0c-e0c2-4e5d-81b8-3741f004be7a.png)
 
-Class Pass is a model of the "peraval_added" table entry with parameters representing the columns of the table, getter/ setter methods and overridden toString() method.
+Testing **@PutMapping("/mount_pass_added/{id}")** (changing latitude and images)
+ 
+![image](https://user-images.githubusercontent.com/90723839/163257925-8260d406-1588-47f1-bfed-c32ebb7bf638.png)
 
-Class Image is a model of the "peraval_images" table entry with parameters representing the columns of the table, getter/ setter methods and overridden toString() method.
+**5.	APPENDIX**
+An example of json received from the client
 
-Interface PassRepository extending JpaRepository <Pass, Integer> is a DAO interface providing standard methods save and get data from the database.
-
-Interface ImageRepository extending JpaRepository <Image, Integer> is a DAO interface providing standard methods save and get data from the database.
-
-Class PassController is a controller class processing requests from the mobile application and sending them to the database with PassRepository methods.
-
-@PostMapping("/pereval_added") throws BadRequestException in case the data received from mobile application is not full and therefor is not sufficient to be added
-to the database (corresponds to HTTP responce 400 BAD REQUEST) and IOException in case images URL is invalid or cannot be connected.
-
-@PutMapping("/pereval_added/{id}") throws BadRequestException in case user details were changed or record status in the database is not "new" and IOException in case images URL is invalid or cannot be connected.
-
-OperationExecutionexception is thrown in case of fail to connect server and corresponds to HTTP status 503 SERVICE UNAVAILABLE.
-
-**4. HOW TO RUN THE API**
-
-You can download an executable jar file here: https://1drv.ms/u/s!Au5Mbiai9-SxhHw7rthtbOLyLk7A?e=Mk0Ubr
-
-Before running the API you have to define Environment variables FSTR_DB_HOST - for database server host (jdbc:postgresql://"your host"), FSTR_DB_PORT - for database server port, FSTR_LOGIN - for database username, FSTR_PASS - for database password. Please note API will be able to connect only database named "pereval"
-
-Once API is running it will connect to http://localhost:8080/submitData/ where you can send your queries to the API in JSON format.
-
-**4.1** To test the @PostMapping("/pereval_added") please connect to http://localhost:8080/submitData/pereval_added.
-
-JSON format example:
-
-{
+    {
+    
     "id": "12211",
-    "beautyTitle": "beauty",
-    "title": "beautiful pass",
+    
+    "beautyTitle": "Nice pass",
+    
+    "title": "Rimutaka Saddle",
+    
     "other_titles": "",
+    
     "connect": "",
+    
     "add_time": "2021-09-22 13:18:13",
+    
     "user": {
+        
         "id":"5",
-        "email":"jjj@gmail.com",
+    
+        "email":"john@gmail.com",
+        
         "phone":"6658298",
+        
         "name":"John",
-        "surname":"Johanson",
-        "otc":"junior"
+        
+        "surname":"Lennon"
+    
     },
+    
     "coords": {
+        
         "latitude": "45.3842",
+        
         "longitude": "7.1525",
+        
         "height": "1200"
+    
     },
+    
     "type": "pass",
+    
     "level": {
+        
         "winter": "",
+        
         "summer": "1?",
+        
         "autumn": "1?",
+        
         "spring": ""
+    
     },
+    
     "images": [
+        
         {
-            "url": "https://www.mwallpapers.com/download-image/64",
-            "title": "right side"
+            
+            "url": "https://www.mwallpapers.com/download-image/648946/1080x864",
+            
+            "title": "Front view"
+        
         },
+        
         {
+            
             "url": "https://www.mwallpapers.com/download-image/819883/1080x2232",
-            "title": "front side"
+            
+            "title": "Top view"
+        
         }
+    
     ]
-}
-
-TESTING:
-
-![image](https://user-images.githubusercontent.com/90723839/156900046-1159e8a2-7dc9-4144-a64a-b85b98b50a04.png)
-
-**4.2** Testing @PutMapping("/pereval_added/{id}") (trying to update record with changed user details)
-
-![image](https://user-images.githubusercontent.com/90723839/156900189-8ca8ad65-bba3-4d30-b43a-618d7bade5ca.png)
-
-**4.3** Testing @PutMapping("/pereval_added/{id}") (changing images)
-
-![image](https://user-images.githubusercontent.com/90723839/156900240-236e3c51-4d58-4e88-a428-28bd8283873d.png)
-
-
+    
+    }
 
