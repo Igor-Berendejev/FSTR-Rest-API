@@ -5,7 +5,7 @@ import com.example.fstr.model.Image;
 import com.example.fstr.model.Pass;
 import com.example.fstr.repository.ImageRepository;
 import com.example.fstr.repository.PassRepository;
-import org.json.JSONArray;
+import com.example.fstr.util.JsonParser;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -39,12 +40,13 @@ public class PassController {
      */
     @PostMapping("/mount_pass_added")
     public Pass submitData(@RequestBody String pass) throws BadRequestException, IOException {
-        String passData = getRawDataFromJSON(pass);
+        String passData = JsonParser.getRawData(pass);
         if (!passContainsCoords(passData)) throw new BadRequestException("Pass coordinates are mandatory");
         if (!passContainsUserDetails(passData))
             throw new BadRequestException("User details are mandatory. Check name, surname, email");
 
-        String imagesData = getPassImages(new JSONObject(pass).getJSONArray("images"));
+        //String imagesData = getPassImages(new JSONObject(pass).getJSONArray("images"));
+        String imagesData = getPassImages(pass);
         return passRepository.save(new Pass(LocalDateTime.now(), passData, imagesData, "new"));
     }
 
@@ -106,9 +108,9 @@ public class PassController {
             throw new BadRequestException("Cannot change user details");
         if (!passContainsCoords(updatedPass)) throw new BadRequestException("Pass coordinates are mandatory");
 
-        databasePass.setRaw_data(getRawDataFromJSON(updatedPass));
+        databasePass.setRaw_data(JsonParser.getRawData(updatedPass));
         deletePassImages(databasePass.getImages());
-        String imagesData = getPassImages(new JSONObject(updatedPass).getJSONArray("images"));
+        String imagesData = getPassImages(updatedPass);
         databasePass.setImages(imagesData);
 
         return passRepository.save(databasePass);
@@ -131,10 +133,9 @@ public class PassController {
      * @return true is coordinates are available, otherwise false
      */
     private boolean passContainsCoords(String passJsonString) {
-        JSONObject passJson = new JSONObject(passJsonString);
-        return (!passJson.getJSONObject("coords").get("latitude").equals("") &&
-                !passJson.getJSONObject("coords").get("longitude").equals("") &&
-                !passJson.getJSONObject("coords").get("height").equals(""));
+        return (!JsonParser.getLatitude(passJsonString).equals("") &&
+                !JsonParser.getLongitude(passJsonString).equals("") &&
+                !JsonParser.getHeight(passJsonString).equals(""));
     }
 
     /**
@@ -145,10 +146,9 @@ public class PassController {
      */
     private boolean passContainsUserDetails(String passJsonString) {
         Pattern emailPattern = Pattern.compile("\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*\\.\\w{2,4}");
-        JSONObject passJson = new JSONObject(passJsonString);
-        return (!passJson.getJSONObject("user").getString("name").equals("") &&
-                !passJson.getJSONObject("user").getString("surname").equals("") &&
-                emailPattern.matcher(passJson.getJSONObject("user").getString("email")).matches());
+        return (!JsonParser.getName(passJsonString).equals("") &&
+                !JsonParser.getSurname(passJsonString).equals("") &&
+                emailPattern.matcher(JsonParser.getEmail(passJsonString)).matches());
     }
 
     /**
@@ -180,24 +180,6 @@ public class PassController {
     }
 
     /**
-     * @param imagesJsonArray a JsonArray representing images URLs received from the client
-     * @return a json for submitting to images column of mount_pass_added table
-     * @throws IOException in case image URL could not be opened
-     */
-    private String getPassImages(JSONArray imagesJsonArray) throws IOException {
-        String imagesJson = "";
-        for (int i = 0; i < imagesJsonArray.toList().size(); i++) {
-            JSONObject jsonObject = imagesJsonArray.getJSONObject(i);
-            if (!jsonObject.getString("url").equals("")) {
-                Image image = addImage(getImageBytes(new URL(jsonObject.getString("url"))));
-                imagesJson = imagesJson + "\"" + jsonObject.getString("title") + "\"" + ":" + image.getId();
-                if (i < imagesJsonArray.toList().size() - 1) imagesJson = imagesJson + ",";
-            }
-        }
-        return "{" + imagesJson + "}";
-    }
-
-    /**
      * checks if user details match in two strings representing pass data received from client
      *
      * @param passJsonString        a string representation of json saved in the raw_data column of mount_pass_added table
@@ -205,22 +187,10 @@ public class PassController {
      * @return true if user details match, otherwise false
      */
     private boolean userDetailsMatch(String passJsonString, String updatedPassJsonString) {
-        JSONObject passJson = new JSONObject(passJsonString);
-        JSONObject updatedPassJson = new JSONObject(updatedPassJsonString);
-        return (passJson.getJSONObject("user").get("name").equals(updatedPassJson.getJSONObject("user").get("name")) &&
-                passJson.getJSONObject("user").get("surname").equals(updatedPassJson.getJSONObject("user").get("surname")) &&
-                passJson.getJSONObject("user").get("email").equals(updatedPassJson.getJSONObject("user").get("email")) &&
-                passJson.getJSONObject("user").get("phone").equals(updatedPassJson.getJSONObject("user").get("phone")));
-    }
-
-    /**
-     * @param passJsonString a String representation of json received from the client
-     * @return a json for submitting to raw_data column of mount_pass_added table
-     */
-    private String getRawDataFromJSON(String passJsonString) {
-        int indexOfImagesData = passJsonString.indexOf("\"images\":");
-        StringBuilder builder = new StringBuilder(passJsonString.substring(0, indexOfImagesData - 1).trim());
-        return builder.replace(builder.length() - 1, builder.length() - 1, "}").toString();
+        return (JsonParser.getName(passJsonString).equals(JsonParser.getName(updatedPassJsonString)) &&
+                JsonParser.getSurname(passJsonString).equals(JsonParser.getSurname(updatedPassJsonString)) &&
+                JsonParser.getEmail(passJsonString).equals(JsonParser.getEmail(updatedPassJsonString)) &&
+                JsonParser.getPhone(passJsonString).equals(JsonParser.getPhone(updatedPassJsonString)));
     }
 
     /**
@@ -234,5 +204,24 @@ public class PassController {
             int imageID = imagesJson.getInt(keys.next());
             deleteImage(imageID);
         }
+    }
+
+    /**
+     * @param passJsonString a String representation of json received from the client
+     * @return a String representation of images json for mount_pass_added table
+     * @throws IOException         in case image URL is invalid
+     * @throws BadRequestException in case no images received from the client
+     */
+    private String getPassImages(String passJsonString) throws IOException, BadRequestException {
+        HashMap<String, String> imagesMap = JsonParser.getUrlMap(passJsonString);
+        StringBuilder imagesJson = new StringBuilder("{");
+        if (!imagesMap.isEmpty()) {
+            for (String key : imagesMap.keySet()) {
+                Image image = addImage(getImageBytes(new URL(imagesMap.get(key))));
+                imagesJson.append("\"").append(key).append("\":").append(image.getId()).append(",");
+            }
+            imagesJson.deleteCharAt(imagesJson.length() - 1).append("}");
+        } else throw new BadRequestException("At least one image must be added");
+        return imagesJson.toString();
     }
 }
